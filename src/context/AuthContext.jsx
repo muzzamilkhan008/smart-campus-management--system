@@ -7,8 +7,8 @@ export const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3
 export const demoUsers = {
   admin: {
     id: "ADM-001",
-    name: "Campus Administrator",
-    email: "admin@campus.edu",
+    name: "Muzamil Khan",
+    email: "admin@smartcampus.ai",
     role: "admin",
     department: "System Administration",
     avatar: DEFAULT_AVATAR,
@@ -16,7 +16,7 @@ export const demoUsers = {
   },
   teacher: {
     id: "FAC-2001",
-    name: "Faculty Instructor",
+    name: "Dr. Robert Vance",
     email: "robert.vance@campus.edu",
     role: "teacher",
     department: "Computer Science",
@@ -63,6 +63,10 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem('campus_user');
     if (saved) {
       const parsed = JSON.parse(saved);
+      if (parsed.role === 'admin') {
+        parsed.name = "Muzamil Khan";
+        parsed.email = "admin@smartcampus.ai";
+      }
       const customAvatars = getCustomAvatarsMap();
       if (customAvatars[parsed.id]) {
         parsed.avatar = customAvatars[parsed.id];

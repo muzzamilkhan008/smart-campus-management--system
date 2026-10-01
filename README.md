@@ -24,7 +24,7 @@ You can log in instantly using the demo switcher buttons on the login screen or 
 
 | Role | Name | Email | Password |
 | :--- | :--- | :--- | :--- |
-| **👑 Admin** | Dr. Elizabeth Warren | `admin@campus.edu` | `demo1234` |
+| **👑 Admin** | Muzamil Khan | `admin@smartcampus.ai` | `demo1234` |
 | **👨‍🏫 Teacher** | Dr. Robert Vance | `robert.vance@campus.edu` | `demo1234` |
 | **🎓 Student** | Alex Morgan | `alex.morgan@campus.edu` | `demo1234` |
 | **👨‍👩‍👦 Parent** | Robert Morgan | `robert.morgan@gmail.com` | `demo1234` |
