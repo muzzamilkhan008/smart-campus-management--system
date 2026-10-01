@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useRef } from 'react';
+import { useAuth, DEFAULT_AVATAR } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
+import { useToast } from '../../context/ToastContext';
 import {
   Sun,
   Moon,
@@ -10,25 +11,27 @@ import {
   User,
   LogOut,
   GraduationCap,
-  Shield,
-  BookOpen,
-  UserCheck,
-  CheckCircle2,
   Sparkles,
   ChevronDown,
   Info,
-  Menu
+  Menu,
+  Camera,
+  Trash2,
+  Upload
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 
 export const Navbar = ({ onOpenMobileMenu, onOpenAboutModal }) => {
-  const { user, logout, switchRole, setCurrentView, setActiveTab } = useAuth();
+  const { user, logout, switchRole, setCurrentView, setActiveTab, updateAvatar, removeAvatar } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const { notifications, markNotificationRead } = useData();
+  const { addToast } = useToast();
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const fileInputRef = useRef(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -44,6 +47,35 @@ export const Navbar = ({ onOpenMobileMenu, onOpenAboutModal }) => {
     if (searchQuery.trim()) {
       setActiveTab('students');
     }
+  };
+
+  // Handle avatar file selection & immediate preview
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      addToast('Please select a valid image file (JPG, PNG, WebP).', 'error', 'Invalid File');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      addToast('Image size should be under 5MB.', 'warning', 'File Too Large');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      updateAvatar(dataUrl);
+      addToast('Profile avatar updated successfully!', 'success', 'Photo Updated');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    removeAvatar();
+    addToast('Profile avatar restored to default.', 'info', 'Photo Removed');
   };
 
   return (
@@ -166,19 +198,28 @@ export const Navbar = ({ onOpenMobileMenu, onOpenAboutModal }) => {
             )}
           </div>
 
-          {/* User Profile Dropdown */}
+          {/* User Profile Area */}
           {user ? (
             <div className="relative">
+              {/* Hidden File Input for Avatar Upload */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                className="flex items-center gap-2 p-1 rounded-full sm:rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
               >
                 <img
-                  src={user.avatar}
+                  src={user.avatar || DEFAULT_AVATAR}
                   alt={user.name}
-                  className="w-8 h-8 rounded-lg object-cover ring-2 ring-blue-500/30"
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-500/40 shadow-xs flex-shrink-0"
                 />
-                <div className="hidden md:block text-left leading-tight">
+                <div className="hidden md:block text-left leading-tight pr-1">
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{user.name}</div>
                   <div className="text-[10px] font-semibold text-slate-400 capitalize">{user.role}</div>
                 </div>
@@ -186,14 +227,56 @@ export const Navbar = ({ onOpenMobileMenu, onOpenAboutModal }) => {
               </button>
 
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50">
-                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">{user.name}</p>
-                    <p className="text-[11px] text-slate-400">{user.email}</p>
-                    <div className="mt-2">
-                      <Badge variant={roleColors[user.role]} size="sm">
-                        {user.role.toUpperCase()}
-                      </Badge>
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-3 z-50">
+                  {/* Profile Header & Avatar Manager */}
+                  <div className="px-4 pb-3 border-b border-slate-100 dark:border-slate-700/60 flex items-center gap-3">
+                    <div className="relative group flex-shrink-0">
+                      <img
+                        src={user.avatar || DEFAULT_AVATAR}
+                        alt={user.name}
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-blue-500/50 shadow-sm"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute inset-0 bg-slate-900/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                        title="Change Photo"
+                      >
+                        <Camera className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="overflow-hidden flex-1">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+                      <div className="mt-1">
+                        <Badge variant={roleColors[user.role]} size="sm">
+                          {user.role.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profile Photo Control Actions */}
+                  <div className="px-4 py-2.5 bg-slate-50/70 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-700/60 space-y-1.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Profile Photo</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-semibold transition-colors"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Change Photo</span>
+                      </button>
+
+                      {user.avatar && user.avatar !== DEFAULT_AVATAR && (
+                        <button
+                          onClick={handleRemovePhoto}
+                          className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-xs transition-colors"
+                          title="Remove Photo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -203,25 +286,25 @@ export const Navbar = ({ onOpenMobileMenu, onOpenAboutModal }) => {
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         onClick={() => { switchRole('admin'); setShowProfileMenu(false); }}
-                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-bold' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
                       >
                         👑 Admin
                       </button>
                       <button
                         onClick={() => { switchRole('teacher'); setShowProfileMenu(false); }}
-                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'teacher' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'teacher' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
                       >
                         👨‍🏫 Teacher
                       </button>
                       <button
                         onClick={() => { switchRole('student'); setShowProfileMenu(false); }}
-                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'student' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'student' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
                       >
                         🎓 Student
                       </button>
                       <button
                         onClick={() => { switchRole('parent'); setShowProfileMenu(false); }}
-                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'parent' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors ${user.role === 'parent' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-bold' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
                       >
                         👨‍👩‍👦 Parent
                       </button>

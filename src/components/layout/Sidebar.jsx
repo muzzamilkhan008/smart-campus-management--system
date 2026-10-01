@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, DEFAULT_AVATAR } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import {
   LayoutDashboard,
@@ -87,9 +87,9 @@ export const Sidebar = () => {
       {/* Role Indicator Banner */}
       <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-slate-800 to-slate-800/60 border border-slate-700/60 flex items-center gap-3">
         <img
-          src={user.avatar}
+          src={user.avatar || DEFAULT_AVATAR}
           alt={user.name}
-          className="w-9 h-9 rounded-xl object-cover ring-2 ring-blue-500/50"
+          className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/50 flex-shrink-0"
         />
         <div className="overflow-hidden">
           <h4 className="text-xs font-bold text-white truncate">{user.name}</h4>

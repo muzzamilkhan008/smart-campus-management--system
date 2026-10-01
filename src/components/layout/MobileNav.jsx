@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, DEFAULT_AVATAR } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import {
   X,
@@ -101,7 +101,7 @@ export const MobileNav = ({ isOpen, onClose }) => {
 
         {/* User Card */}
         <div className="my-4 p-3 rounded-xl bg-slate-800 border border-slate-700 flex items-center gap-3">
-          <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-lg object-cover" />
+          <img src={user.avatar || DEFAULT_AVATAR} alt={user.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/50 flex-shrink-0" />
           <div className="overflow-hidden">
             <h4 className="text-xs font-bold text-white truncate">{user.name}</h4>
             <p className="text-[10px] text-blue-400 font-semibold uppercase">{role}</p>

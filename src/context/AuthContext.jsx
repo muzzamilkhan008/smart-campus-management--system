@@ -2,23 +2,25 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
+export const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%232563eb'/><circle cx='50' cy='36' r='20' fill='%23ffffff'/><path d='M20 85 c0-18 15-28 30-28 s30 10 30 28 z' fill='%23ffffff'/></svg>";
+
 export const demoUsers = {
   admin: {
     id: "ADM-001",
-    name: "Dr. Elizabeth Warren",
+    name: "Campus Administrator",
     email: "admin@campus.edu",
     role: "admin",
     department: "System Administration",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    avatar: DEFAULT_AVATAR,
     designation: "Chief Academic Administrator"
   },
   teacher: {
     id: "FAC-2001",
-    name: "Dr. Robert Vance",
+    name: "Faculty Instructor",
     email: "robert.vance@campus.edu",
     role: "teacher",
     department: "Computer Science",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+    avatar: DEFAULT_AVATAR,
     designation: "Professor & HOD",
     assignedCourses: ["CS-301 Algorithm Analysis", "CS-405 Artificial Intelligence"]
   },
@@ -30,7 +32,7 @@ export const demoUsers = {
     department: "Computer Science",
     program: "B.Tech CS",
     semester: "6th",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    avatar: DEFAULT_AVATAR,
     cgpa: 3.85,
     attendance: "94.5%"
   },
@@ -42,14 +44,34 @@ export const demoUsers = {
     childName: "Alex Morgan",
     childId: "STU-1001",
     childDepartment: "Computer Science",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"
+    avatar: DEFAULT_AVATAR
   }
 };
 
 export const AuthProvider = ({ children }) => {
+  // Helper to retrieve custom saved avatars from localStorage
+  const getCustomAvatarsMap = () => {
+    try {
+      const saved = localStorage.getItem('campus_custom_avatars');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  };
+
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('campus_user');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const customAvatars = getCustomAvatarsMap();
+      if (customAvatars[parsed.id]) {
+        parsed.avatar = customAvatars[parsed.id];
+      } else if (!parsed.avatar || parsed.avatar.includes('unsplash.com')) {
+        parsed.avatar = DEFAULT_AVATAR;
+      }
+      return parsed;
+    }
+    return null;
   });
 
   const [currentView, setCurrentView] = useState(() => {
@@ -67,7 +89,13 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = (roleKey = 'admin') => {
-    const selectedUser = demoUsers[roleKey] || demoUsers.admin;
+    const selectedUser = { ...(demoUsers[roleKey] || demoUsers.admin) };
+    const customAvatars = getCustomAvatarsMap();
+    if (customAvatars[selectedUser.id]) {
+      selectedUser.avatar = customAvatars[selectedUser.id];
+    } else {
+      selectedUser.avatar = DEFAULT_AVATAR;
+    }
     setUser(selectedUser);
     setCurrentView('dashboard');
     setActiveTab('dashboard');
@@ -83,6 +111,28 @@ export const AuthProvider = ({ children }) => {
     login(roleKey);
   };
 
+  // Upload/Change Avatar function
+  const updateAvatar = (newAvatarDataUrl) => {
+    if (!user) return;
+    const customAvatars = getCustomAvatarsMap();
+    customAvatars[user.id] = newAvatarDataUrl;
+    localStorage.setItem('campus_custom_avatars', JSON.stringify(customAvatars));
+
+    const updatedUser = { ...user, avatar: newAvatarDataUrl };
+    setUser(updatedUser);
+  };
+
+  // Remove Custom Avatar function (Restore generic default)
+  const removeAvatar = () => {
+    if (!user) return;
+    const customAvatars = getCustomAvatarsMap();
+    delete customAvatars[user.id];
+    localStorage.setItem('campus_custom_avatars', JSON.stringify(customAvatars));
+
+    const updatedUser = { ...user, avatar: DEFAULT_AVATAR };
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -90,6 +140,8 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       switchRole,
+      updateAvatar,
+      removeAvatar,
       currentView,
       setCurrentView,
       activeTab,
